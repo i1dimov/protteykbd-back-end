@@ -26,7 +26,7 @@ class User(db.Model):
 
 
 @dataclass
-class Product(db.Model):
+class Item(db.Model):
     id: int
     name: str
     description: str
@@ -52,11 +52,11 @@ class Cart(db.Model):
 @dataclass
 class CartItem(db.Model):
     id: int
-    product_id: int
+    item_id: int
     quantity: int
     cart_id: int
     id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('Product.id'))
+    item_id = db.Column(db.Integer, db.ForeignKey('Item.id'))
     quantity = db.Column(db.Integer)
     cart_id = db.Column(db.Integer, db.ForeignKey('Cart.id'))
 
@@ -72,11 +72,11 @@ class Wishlist(db.Model):
 @dataclass
 class WishlistItem(db.Model):
     id: int
-    product_id: int
+    item_id: int
     quantity: int
     cart_id: int
     id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('Product.id'))
+    item_id = db.Column(db.Integer, db.ForeignKey('Item.id'))
     quantity = db.Column(db.Integer)
     wishlist_id = db.Column(db.Integer, db.ForeignKey('Wishlist.id'))
 
@@ -117,11 +117,29 @@ def register():
     return "register"
 
 
-# Product
-@app.route("/product")
-def product():
-    return "product"
+# Item
+@app.route("/item")
+def item():
+    return "item"
 
+
+
+# Cart
+@app.route('/cart')
+def cart():
+    return "cart"
+
+
+# Wishlist
+@app.route('/wishlist')
+def wishlist():
+    return "wishlist"
+
+
+# Orders
+@app.route('/orders')
+def cart():
+    return "orders"
 
 
 if __name__ == "__main__":
