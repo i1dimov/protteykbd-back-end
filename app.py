@@ -30,13 +30,13 @@ class Item(db.Model):
     id: int
     name: str
     description: str
-    images: str
+    image: str
     price: int
     quantity: int
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable=False, unique=True)
     description = db.Column(db.String(255), nullable=True, unique=False)
-    images = db.Column(db.String(20))
+    image = db.Column(db.String(20))
     price = db.Column(db.Integer)
     quantity = db.Column(db.Integer)
 
@@ -118,10 +118,32 @@ def register():
 
 
 # Item
-@app.route("/item")
-def item():
-    return "item"
+@app.route("/item/<itemID>", methods=['POST', 'GET', 'DELETE'])
+@app.route("/item/")
+def item(itemID):
+    if request.method == 'GET':
+        item = Item.query.filter(Item.id == itemID)
+        return jsonify(item)
 
+    if request.method == 'POST':
+        newItem = request.get_json(force=True)
+        item = Item(
+            name=newItem['name'],
+            description=newItem['description'],
+            image=newItem['image'],
+            price=newItem['price'],
+            quantity=newItem['quantity'])
+        try:
+            db.session.add(item)
+            db.session.commit()
+            return jsonify(newItem)
+        except sqlite3.Error as e:
+            return "При создании товара произошла ошибка: " + str(e)
+
+
+@app.route("/item")
+def items():
+    return "item"
 
 
 # Cart
