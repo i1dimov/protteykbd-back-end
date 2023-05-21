@@ -1,5 +1,12 @@
-from app import db
+from flask_sqlalchemy import SQLAlchemy
+from uuid import uuid4
 from dataclasses import dataclass
+
+db = SQLAlchemy()
+
+
+def get_uuid():
+    return uuid4().hex
 
 
 # Entity
@@ -10,9 +17,9 @@ class User(db.Model):
     password: str
     cart_id: int
     id = db.Column(db.Integer, primary_key=True)
-    login = db.Column(db.String(50), nullable=False, unique=True)
-    password = db.Column(db.String(500), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('cart.id'), unique=True)
+    login = db.Column(db.String(345), nullable=False, unique=True)
+    password = db.Column(db.Text, nullable=False)
+    cart_id = db.Column(db.Integer, db.ForeignKey('cart.id'), unique=True)
 
     def __repr__(self):
         return f"<user {self.id}>"
@@ -29,7 +36,7 @@ class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable=False, unique=True)
     description = db.Column(db.String(255), nullable=True, unique=False)
-    image = db.Column(db.LargeBinary)
+    image = db.Column(db.String)
     price = db.Column(db.Integer)
     quantity = db.Column(db.Integer)
 
@@ -137,6 +144,7 @@ class ConstructorItem(db.Model):
 @dataclass
 class Component(db.Model):
     id: int
+    name: str
     type: str  # stabilizer, kit, pcb, case, switches...
     size: str  # 65%, 75%, 100%...
     mount: str  # tray, gasket...
@@ -147,6 +155,7 @@ class Component(db.Model):
     link: str
     image: str
     id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
     type = db.Column(db.String)
     size = db.Column(db.String)
     mount = db.Column(db.String)
@@ -155,7 +164,7 @@ class Component(db.Model):
     layout = db.Column(db.String)
     price = db.Column(db.Float)
     link = db.Column(db.String)
-    image = db.Column(db.LargeBinary)
+    image = db.Column(db.String)
 
     def __repr__(self):
         return f"<component {self.id}>"
