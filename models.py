@@ -1,26 +1,5 @@
-from flask import Flask, json, jsonify, request, render_template, Response
-from flask_cors import CORS
+from app import db
 from dataclasses import dataclass
-import sqlite3
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-from flask_login import LoginManager, login_user, login_required, logout_user, current_user
-from imagekitio import ImageKit
-
-
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///DB.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'impossible_to_hack'
-db = SQLAlchemy(app)
-CORS(app)
-
-imagekit = ImageKit(
-    public_key='public_F1jpuG3pmF8Or4l1zVdWkCQSNHI=',
-    private_key='private_EZXS35qhxnj0HQnXAuOQYWsha9U=',
-    url_endpoint='https://ik.imagekit.io/xiultnofr'
-)
 
 
 # Entity
@@ -33,7 +12,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     login = db.Column(db.String(50), nullable=False, unique=True)
     password = db.Column(db.String(500), nullable=False)
-    cart_id = db.Column(db.Integer, db.ForeignKey('cart.id'), unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('cart.id'), unique=True)
 
     def __repr__(self):
         return f"<user {self.id}>"
@@ -50,7 +29,7 @@ class Item(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(20), nullable=False, unique=True)
     description = db.Column(db.String(255), nullable=True, unique=False)
-    image = db.Column(db.String)
+    image = db.Column(db.LargeBinary)
     price = db.Column(db.Integer)
     quantity = db.Column(db.Integer)
 
@@ -176,86 +155,7 @@ class Component(db.Model):
     layout = db.Column(db.String)
     price = db.Column(db.Float)
     link = db.Column(db.String)
-    image = db.Column(db.String)
+    image = db.Column(db.LargeBinary)
 
     def __repr__(self):
         return f"<component {self.id}>"
-
-
-@app.route('/upload', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        file = request.files['file']
-        if not file:
-            return 'no image', 400
-
-        itemName = secure_filename(file.filename)
-        upload = imagekit.upload_file(
-            file=file,
-            file_name=itemName
-            )
-        print(upload)
-        return upload.response_metadata.raw
-    return render_template('upload.html')
-
-
-# Login
-@app.route('/login')
-def login():
-    return "login"
-
-
-# Register
-@app.route("/register")
-def register():
-    return "register"
-
-
-# Item
-# получить информацию об отдельном товаре
-@app.route("/item/<itemId>")
-def item(itemId):
-    if request.method == 'GET':
-        item = Item.query.filter(Item.id == itemId).first()
-        return jsonify(item)
-
-
-@app.route("/items")
-def items():
-    if request.method == 'GET':
-        items = Item.query.all()
-        return jsonify(items)
-
-
-# Cart
-# Добавить или удалить из корзины, получить данные о корзине
-@app.route('/cart')
-def cart():
-    return "cart"
-
-
-# Wishlist
-# Позже
-@app.route('/wishlist')
-def wishlist():
-    return "wishlist"
-
-
-# Orders
-# Получить заказы текущего пользователя
-@app.route('/orders')
-def orders():
-    return "orders"
-
-
-# Конструктор
-# Получить все запчасти, добавить в корзину
-@app.route('/constructor')
-def constructor():
-    if request.method == 'GET':
-        components = Component.query.all()
-        return jsonify(components)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
