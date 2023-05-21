@@ -108,7 +108,9 @@ def register():
         return jsonify({"error": "User already exists"}), 409
     hashed_password = bcrypt.generate_password_hash(password)
     new_user = User(login=login, password=hashed_password)
+    new_cart = Cart(user_id=new_user.id)
     db.session.add(new_user)
+    db.session.add(new_cart)
     db.session.commit()
     return jsonify({
         "id": new_user.id,
@@ -136,11 +138,26 @@ def items():
 # Добавить или удалить из корзины, получить данные о корзине
 @app.route('/cart', methods=['GET', 'POST', 'DELETE'])
 def cart():
-    return "cart"
+    if request.method == 'GET':
+        cart = Cart.query.filter(id == session.get("user_id")).first()
+        return jsonify(cart)
+    if request.method == 'POST':
+        item_id = request.json['item_id']
+        item_type = request.json['item_type']
+        quantity = request.json['quantity']
+        cart_id = User.query.filter(id == session.get("user_id")).first().cart_id
+        cart_item = CartItem(item_id=item_id, quantity=quantity, item_type=item_type, cart_id=cart_id)
+        db.session.add(cart_item)
+        db.session.commit()
+    if request.method == 'DELETE':
+        item_id = request.json['item_id']
+        cart_id = User.query.get(session.get("user_id")).cart_id
+        cart_item = CartItem.query.filter(cart_id == cart_id, item_id == item_id).first()
+        db.session.delete(cart_item)
+        db.session.commit()
 
 
 # Wishlist
-# Позже
 @app.route('/wishlist', methods=['GET', 'POST', 'DELETE'])
 def wishlist():
     return "wishlist"
