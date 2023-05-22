@@ -1,4 +1,4 @@
-from flask import Flask, json, jsonify, request, render_template, Response, abort, session
+from flask import Flask, jsonify, request, render_template, session
 from flask_cors import CORS
 from flask_bcrypt import Bcrypt
 from dataclasses import dataclass
@@ -10,6 +10,7 @@ from imagekitio import ImageKit
 from models import *
 import redis
 from flask_session import Session
+from component_price_parser import get_price
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///DB.db'
@@ -19,17 +20,16 @@ app.config['SECRET_KEY'] = 'asdfhasdhf93408932i4uh08723fi0hadsf0813u4r'
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url("redis://localhost:6379")
+app.config['SESSION_REDIS'] = redis.from_url("redis://127.0.0.1:6379")
 
-# db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+CORS(app, supports_credentials=True)
+Session(app)
 db.init_app(app)
 
 with app.app_context():
     db.create_all()
 
-CORS(app, supports_credentials=True)
-bcrypt = Bcrypt(app)
-server_session = Session(app)
 
 imagekit = ImageKit(
     public_key='public_F1jpuG3pmF8Or4l1zVdWkCQSNHI=',
@@ -188,9 +188,11 @@ def wishlist():
 
 # Orders
 # Получить заказы текущего пользователя
-@app.route('/orders', methods=['GET', 'POST', 'DELETE'])
+@app.route('/orders', methods=['GET'])
 def orders():
-    return "orders"
+    user_id = session.get("user_id")
+    orders = Order.query.filter(Order.user_id == user_id)
+    return jsonify(orders)
 
 
 # Конструктор
