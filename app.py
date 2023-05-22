@@ -12,14 +12,14 @@ import redis
 from flask_session import Session
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///DB.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql:///DB.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'asdfhasdhf93408932i4uh08723fi0hadsf0813u4r'
 
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_REDIS'] = redis.from_url("redis://127.0.0.1:6379")
+app.config['SESSION_REDIS'] = redis.from_url("redis://localhost:6379")
 
 # db = SQLAlchemy(app)
 db.init_app(app)
@@ -98,8 +98,6 @@ def current_user():
 # Register
 @app.route("/register", methods=['POST'])
 def register():
-    print(request.json)
-    print("YES")
     login = request.json['email']
     password = request.json['password']
     user_exists = User.query.filter_by(login=login).first() is not None
@@ -178,6 +176,8 @@ def constructor():
         components = Component.query.all()
         return jsonify(components)
     if request.method == 'POST':
+        constructor = Constructor(session.get("user_id"))
+        db.session.add(constructor)
         return 'СОХРАНИТЬ'
     if request.method == 'DELETE':
         return 'ОЧИСТИТЬ'
