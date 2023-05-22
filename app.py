@@ -12,7 +12,7 @@ import redis
 from flask_session import Session
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql:///DB.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///DB.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'asdfhasdhf93408932i4uh08723fi0hadsf0813u4r'
 
@@ -105,10 +105,14 @@ def register():
     if user_exists:
         return jsonify({"error": "User already exists"}), 409
     hashed_password = bcrypt.generate_password_hash(password)
-    new_user = User(login=login, password=hashed_password)
-    new_cart = Cart(user_id=new_user.id)
+    user_count = len(User.query.all())
+    cart_count = len(Cart.query.all())
+    new_user = User(login=login, password=hashed_password, cart_id=cart_count+1)
+    new_cart = Cart(user_id=user_count+1)
+    new_wishlist = Wishlist(user_id=user_count+1)
     db.session.add(new_user)
     db.session.add(new_cart)
+    db.session.add(new_wishlist)
     db.session.commit()
     return jsonify({
         "id": new_user.id,
@@ -137,28 +141,49 @@ def items():
 @app.route('/cart', methods=['GET', 'POST', 'DELETE'])
 def cart():
     if request.method == 'GET':
-        cart = Cart.query.filter(id == session.get("user_id")).first()
-        return jsonify(cart)
+        cart = Cart.query.filter(Cart.user_id == session.get("user_id")).first()
+        cart_items = CartItem.query.filter(CartItem.cart_id == cart.id).all()
+        return jsonify(cart_items)
     if request.method == 'POST':
         item_id = request.json['item_id']
         item_type = request.json['item_type']
         quantity = request.json['quantity']
-        cart_id = User.query.filter(id == session.get("user_id")).first().cart_id
+        cart_id = User.query.filter(User.id == session.get("user_id")).first().cart_id
         cart_item = CartItem(item_id=item_id, quantity=quantity, item_type=item_type, cart_id=cart_id)
         db.session.add(cart_item)
         db.session.commit()
+        return '200'
     if request.method == 'DELETE':
         item_id = request.json['item_id']
         cart_id = User.query.get(session.get("user_id")).cart_id
-        cart_item = CartItem.query.filter(cart_id == cart_id, item_id == item_id).first()
+        cart_item = CartItem.query.filter(CartItem.cart_id == cart_id, CartItem.item_id == item_id).first()
         db.session.delete(cart_item)
         db.session.commit()
+        return '200'
 
 
 # Wishlist
 @app.route('/wishlist', methods=['GET', 'POST', 'DELETE'])
 def wishlist():
-    return "wishlist"
+    if request.method == 'GET':
+        wishlist = Wishlist.query.filter(Wishlist.id == session.get("user_id")).first()
+        wishlist_items = WishlistItem.query.filter(wishlist.id).all()
+        return jsonify(wishlist_items)
+    if request.method == 'POST':
+        item_id = request.json['item_id']
+        quantity = request.json['quantity']
+        wishlist_id = session.get("user_id")
+        wishlist_item = WishlistItem(item_id=item_id, quantity=quantity, wishlist_id=wishlist_id)
+        db.session.add(wishlist_item)
+        db.session.commit()
+        return '200'
+    if request.method == 'DELETE':
+        item_id = request.json['item_id']
+        wishlist_id = session.get("user_id")
+        wishlist_item = WishlistItem.query.filter(wishlist_id == wishlist_id, item_id == item_id).first()
+        db.session.delete(wishlist_item)
+        db.session.commit()
+        return '200'
 
 
 # Orders
@@ -172,15 +197,24 @@ def orders():
 # Получить все запчасти, добавить в корзину
 @app.route('/constructor', methods=['GET', 'POST', 'DELETE'])
 def constructor():
+    constructor = Constructor.get(Constructor.user_id == session.get("user_id"))
     if request.method == 'GET':
         components = Component.query.all()
         return jsonify(components)
     if request.method == 'POST':
-        constructor = Constructor(session.get("user_id"))
-        db.session.add(constructor)
-        return 'СОХРАНИТЬ'
+        components = request.json['components']
+        for component in components:
+            new_component = ConstructorItem(component_id=component.id, constructor_id=constructor.id)
+            db.session.add(new_component)
+        db.session.commit()
+        return '200'
     if request.method == 'DELETE':
-        return 'ОЧИСТИТЬ'
+        components = request.json['components']
+        for component in components:
+            delete_component = ConstructorItem(component_id=component.id, constructor_id=constructor.id)
+            db.session.delete(delete_component)
+        db.session.commit()
+        return '200'
 
 
 if __name__ == "__main__":
