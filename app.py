@@ -186,7 +186,7 @@ def wishlist():
     if request.method == 'DELETE':
         item_id = request.json['item_id']
         wishlist_id = session.get("user_id")
-        wishlist_item = WishlistItem.query.filter(wishlist_id == wishlist_id, item_id == item_id).first()
+        wishlist_item = WishlistItem.query.filter(WishlistItem.wishlist_id == wishlist_id, WishlistItem.item_id == item_id).first()
         db.session.delete(wishlist_item)
         db.session.commit()
         return '200'
