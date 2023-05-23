@@ -168,10 +168,13 @@ def cart():
 # Wishlist
 @app.route('/wishlist', methods=['GET', 'POST', 'DELETE'])
 def wishlist():
+    items = []
     if request.method == 'GET':
-        wishlist = Wishlist.query.filter(Wishlist.id == session.get("user_id")).first()
-        wishlist_items = WishlistItem.query.filter(wishlist.id).all()
-        return jsonify(wishlist_items)
+        wishlist = Wishlist.query.filter(Wishlist.user_id == session.get("user_id")).first()
+        wishlist_items = WishlistItem.query.filter(WishlistItem.wishlist_id == wishlist.id).all()
+        for wishlist_item in wishlist_items:
+            items.append(Item.query.filter(Item.id == wishlist_item.item_id).first())
+        return jsonify(items)
     if request.method == 'POST':
         item_id = request.json['item_id']
         quantity = request.json['quantity']
