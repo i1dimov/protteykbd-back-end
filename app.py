@@ -30,7 +30,6 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
-
 imagekit = ImageKit(
     public_key='public_F1jpuG3pmF8Or4l1zVdWkCQSNHI=',
     private_key='private_EZXS35qhxnj0HQnXAuOQYWsha9U=',
@@ -83,6 +82,7 @@ def logout():
 # User
 @app.route('/user')
 def current_user():
+    # update_component_prices()
     user_id = session.get("user_id")
 
     if user_id is None:
@@ -140,10 +140,13 @@ def items():
 # Добавить или удалить из корзины, получить данные о корзине
 @app.route('/cart', methods=['GET', 'POST', 'DELETE'])
 def cart():
+    items = []
     if request.method == 'GET':
         cart = Cart.query.filter(Cart.user_id == session.get("user_id")).first()
         cart_items = CartItem.query.filter(CartItem.cart_id == cart.id).all()
-        return jsonify(cart_items)
+        for cart_item in cart_items:
+            items.append(Item.query.filter(Item.id == cart_item.item_id).first())
+        return jsonify(items)
     if request.method == 'POST':
         item_id = request.json['item_id']
         item_type = request.json['item_type']
@@ -199,7 +202,7 @@ def orders():
 # Получить все запчасти, добавить в корзину
 @app.route('/constructor', methods=['GET', 'POST', 'DELETE'])
 def constructor():
-    constructor = Constructor.get(Constructor.user_id == session.get("user_id"))
+    constructor = Constructor.query.filter(Constructor.user_id == session.get("user_id")).first()
     if request.method == 'GET':
         components = Component.query.all()
         return jsonify(components)
@@ -217,6 +220,14 @@ def constructor():
             db.session.delete(delete_component)
         db.session.commit()
         return '200'
+
+
+def update_component_prices():
+    components = Component.query.all()
+    for component in components:
+        if component.link is not None:
+            component.price = get_price(component.link)
+            db.session.commit()
 
 
 if __name__ == "__main__":
